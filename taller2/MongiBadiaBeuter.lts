@@ -1,0 +1,99 @@
+/*P = (a->b->P).
+Q = (c->b->Q).
+||S1 = (P||Q).
+
+S2 =(a->c->b->S2|c->a->b->S2).
+
+// Ambos procesos poseen las mismas trazas
+*/
+
+/*
+VARIABLE(N=1) = (escribe[n:0..N] -> lee[n] -> VARIABLE).
+
+ESCRITOR(N=1) = (escribe[i:0..N] -> ESCRITOR).
+LECTOR(N=1) = (lee[i:1..N] -> imprimir[2*i] -> LECTOR|
+			   lee[0] -> LECTOR).
+||S2 = (ESCRITOR||LECTOR||VARIABLE).
+*/
+
+/*
+DIRECTOR = (abrir -> cerrar -> vacio -> DIRECTOR).
+
+
+ESTE = (abrir -> ESTE_ABIERTA),
+ESTE_ABIERTA = (entrada -> ESTE_ABIERTA |
+				cerrar -> ESTE).
+OESTE = (abrir -> OESTE_ABIERTA),
+OESTE_ABIERTA = (salida-> OESTE_ABIERTA |
+				 vacio -> OESTE).
+CONTROLADOR(N=3) = (abrir-> CONTROLADOR[0]),
+
+CONTROLADOR[i:0..N] = (when(i < N) entrada -> CONTROLADOR[i+1]|
+					   when(i > 0) salida -> CONTROLADOR[i-1]|
+					   when(i == 0) vacio -> CONTROLADOR).
+
+||MUSEO = (ESTE||OESTE||CONTROLADOR||DIRECTOR).
+*/
+
+/*
+CLIENT = (call -> (reply -> continue -> CLIENT|
+				   timeout -> CLIENT)).
+SERVER = (call -> (service -> (reply -> SERVER|
+							   timeout -> SERVER)|
+				   timeout -> SERVER)).
+
+||CLIENT_SERVER = ( a:CLIENT || b:CLIENT || {a,b}::SERVER)/{service/a.service, service/b.service}.
+
+// b - Si el cliente puede tener timeout, el servidor puede estancarse esperando enviar un reply
+// que jamas va a ser recibido.
+// c - El problema se soluciona de esta manera.
+*/
+
+/*
+EMISOR = (msg -> envio -> (ack -> EMISOR|
+						   error -> EMISOR)).
+
+CANAL = (entrada -> salida -> CANAL|
+		 entrada -> error -> CANAL).
+
+RECEPTOR = (recv -> entrega -> ack -> RECEPTOR).
+
+||PROTOCOLO = (EMISOR||CANAL||RECEPTOR)/{salida/recv,entrada/envio}.
+*/
+
+/*
+MOLINETE = (pasajero -> MOLINETE).
+
+TREN = (partida -> TREN).
+
+CONTROL(N = 4) = CONTROL[0],
+CONTROL[i:0..N] = (when(i < N)  pasajero -> CONTROL[i+1] |
+				   when(i == N) partida -> CONTROL[0]).
+
+||MONTANIA = (MOLINETE||TREN||CONTROL).
+*/
+
+/*
+HORNO = (abrir -> HORNO_APAGADO_ABIERTO|
+				 		 marcha -> HORNO_PRENDIDO),
+HORNO_APAGADO_ABIERTO = (cerrar -> HORNO),
+HORNO_PRENDIDO = (abrir -> HORNO_APAGADO_ABIERTO|
+				  apagar -> HORNO).
+		 
+SELECTOR(M=3) = (modo[i:1..M] -> SELECTOR).
+
+||HORNO_COMPUESTO = (HORNO || SELECTOR).
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
