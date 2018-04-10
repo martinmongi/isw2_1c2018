@@ -1,0 +1,197 @@
+// 1.
+/*
+WORKER = (take -> start -> end -> result -> WORKER).
+
+SUPERVISOR = (accept -> take -> result ->SUPERVISOR).
+
+||SWSYSTEM = (a:WORKER || b:WORKER || {a,b}::SUPERVISOR || EQUAL_LOAD).
+
+progress RESULT = {a.result}
+progress TAKE = {a.take, b.take}
+
+property EQUAL_LOAD = (a.take -> EL_A|
+					   b.take -> EL_B),
+EL_A = (b.take -> EL_B),
+EL_B = (a.take -> EL_A).
+*/
+// El sistema no presenta deadlocks y siempre hay progreso en la resolución.
+// El sistema cumple con la definición de fair choice, ya que al ser una sola componente conexa,
+// siempre se pasan por todos los estados infinitas veces
+
+// 2
+/*
+const M = 3
+range P = 0..M-1
+def Left(p) = p
+def Right(p) = (p+1) % M
+Philosopher(Id=0) = (think[Id] -> Hungry),
+  Hungry = (
+    take[Id][Left(Id)] -> take[Id][Right(Id)] -> eat[Id] ->
+    release[Id][Left(Id)] -> release[Id][Right(Id)] -> Philosopher)
+    +{take[Id][P],release[Id][P]}.
+Fork(Id=0) = Available,
+  Available = (take[P][Id] -> Taken),
+  Taken = (release[P][Id] -> Available).
+||DP = (forall [i:P] (Philosopher(i) || Fork(i))).
+
+progress EAT = {eat[i:P]}
+*/
+// No, el sistema tiene deadlock, con traza: think.0, take.0.0, think.1, take.1.1, think.2, take.2.2
+// No, cómo el sistema tiene deadlock con una traza que no llega a eat, no existe garantía de que en algún momento los filósofos coman.
+// No, no cambia
+
+// 3
+/*
+const M = 3
+range P = 0..M-1
+def Left(p) = p
+def Right(p) = (p+1) % M
+
+Philosopher(Id=0) = (think[Id] -> Hungry),
+Hungry = (take[Id][Left(Id)] -> OneFork),
+OneFork = (take[Id][Right(Id)] -> eat[Id] -> release[Id][Left(Id)] -> release[Id][Right(Id)] -> Philosopher|
+		   release[Id][Left(Id)] -> Hungry)
+    	  +{take[Id][P],release[Id][P]}.
+Fork(Id=0) = Available,
+  Available = (take[P][Id] -> Taken),
+  Taken = (release[P][Id] -> Available).
+||DP = (forall [i:P] (Philosopher(i) || Fork(i))).
+
+progress EAT = {eat[i:P]}
+*/
+// Sí, el sistema está libre de deadlocks
+// Sí, cómo está libre de deadlocks y es una componente fuertemente conexa, podemos asumir que en algún momento comeran todos los filósofos.
+// Sí, si no asumimos fair choice, podría ocurrir que siempre coman los mismos filósofos.
+
+// 4
+/*
+const M = 3
+range P = 0..M-1
+range Seats = 0..M-2
+def Left(p) = p
+def Right(p) = (p+1) % M
+
+Philosopher(Id=0) = (sit[Id][Seats]-> think[Id] -> Hungry),
+  Hungry = (
+    take[Id][Left(Id)] -> take[Id][Right(Id)] -> eat[Id] ->
+    release[Id][Left(Id)] -> release[Id][Right(Id)] -> stand[Id][Seats] -> Philosopher)
+    +{take[Id][P],release[Id][P]}.
+
+Fork(Id=0) = Available,
+  Available = (take[P][Id] -> Taken),
+  Taken = (release[P][Id] -> Available).
+
+Seat(Id=0) = (sit[P][Id] -> stand[P][Id] -> Seat).
+
+||DP = (forall [i:P] (Philosopher(i) || Fork(i)) || forall[j:Seats] (Seat(j))).
+
+progress EAT = {eat[i:P]}
+*/
+// Está libre de deadlocks, ya que al no poder tener M filósofos bloqueando cada uno un tenedor,
+// siempre hay alguno que podrá agarrar el tenedor extra, comer y liberar para que los otros coman.
+// Sí, cómo está libre de deadlocks y es una componente fuertemente conexa, podemos asumir que en algún momento comeran todos los filósofos.
+// Sí, si no asumimos fair choice, podría ocurrir que siempre coman los mismos filósofos.
+
+// 5
+/*
+const M = 3
+range P = 0..M-1
+def Left(p) = p
+def Right(p) = (p+1) % M
+Philosopher(Id=0) = (think[Id] -> Hungry),
+  Hungry = (
+    take[Id][Right(Id)] -> take[Id][Left(Id)] -> eat[Id] ->
+    release[Id][Right(Id)] -> release[Id][Left(Id)] -> Philosopher)
+    +{take[Id][P],release[Id][P]}.
+Fork(Id=0) = Available,
+  Available = (take[P][Id] -> Taken),
+  Taken = (release[P][Id] -> Available).
+||DP = (forall [i:P] (Philosopher(i) || Fork(i))).
+*/
+// a. No esta libre de deadlocks
+// b. No la cumple, ya que puede tener un deadlock antes de que se produzca la accion eat
+// c. No cambia la respuesta, la garantia de progreso no ocurre
+
+// 7
+/*
+const MaxTime = 17
+range Edge = 0..1
+range Time = 0..MaxTime
+def Opposite(e) = (e+1)%2
+def Speed(p) = p*p+1
+
+Person(Id=0) = At[0],
+  At[e:Edge] = (
+    restart -> Person |
+    start[Id][e] -> end[Id] -> At[Opposite(e)] |
+	when (e==1) go_away -> STOP)+{go_away}.
+
+Torch = At[0][MaxTime],
+  At[e:Edge][t:Time] = (
+    go_away -> STOP |
+    start[p1:0..3][e] -> (
+      end[p1] -> Next[e][t][p1] |
+      start[p2:p1..3][e] -> end[p1] ->
+        end[p2] -> Next[e][t][p2] ) ),
+  Next[e:Edge][t:Time][p:0..3] =
+    if (t < Speed(p)) then (restart -> Torch)
+    else At[Opposite(e)][t - Speed(p)].	
+
+||BC = (Torch || (forall [p:0..3] Person(p))).
+*/
+/*
+La traza es la siguiente:  start.0.0
+ start.1.0
+ end.0
+ end.1
+ start.0.1
+ end.0
+ start.2.0
+ start.3.0
+ end.2
+ end.3
+ start.1.1
+ end.1
+ start.0.0
+ start.1.0
+ end.0
+ end.1
+*/
+
+// 7
+/*
+set UID = {[19],[14],[7],[2]}
+const
+N = #UID
+set M = {null,msg.UID}
+set Status = {unknown, leader}
+
+CHAN  = (put[m:M] -> get[m] -> CHAN).
+
+ROUND = (step1 -> step2 -> ROUND).
+
+PROCESS(U=1) = (init[U] -> STATE['unknown]['msg[U]]),
+  STATE[status:Status][send:M] = (
+    step1 -> put[send] -> STATE[status][send] |
+    step2 -> (
+      get.null -> DSTATE[status]['null] |
+      get.msg[v:UID] ->
+        if (v>U) then DSTATE[status]['msg[v]]
+        else if (v==U) then DSTATE['leader]['null]
+        else DSTATE[status]['null] )),
+  DSTATE[status:Status][send:M] = (
+    [send] -> [status] -> STATE[status][send] ).
+
+property LIDER = (proc[v:UID]['leader] -> LIDER) +{proc[w:UID]['leader]}.
+
+||LCR = (ROUND || chan[1..N]:CHAN || proc[i:1..N]:PROCESS(@(UID,i-1)) || LIDER)
+  /{ forall[i:1..N] {
+     proc[i].get/chan[i].get, 
+proc[i].put/chan[i%N+1].put,
+     step1/proc[i].step1, step2/proc[i].step2  
+}}.
+
+
+
+
+*/
