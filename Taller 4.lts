@@ -1,0 +1,122 @@
+// 1
+/*
+Vamos a evaluar caso por caso:
+a. En este caso, puede suceder que ambos procesos levanten cont a local al mismo tiempo (levantando 0), le sumen 1 y ambas escriban 1 en cont. De otra forma, se pueden ejecutar serialmente y, de esta forma, el proceso que termine segundo, escribirá 2.
+b. Este caso es prácticamente igual al anterior, ambos podrían levantar cont antes de incrementarlo, resultando en 1. También podrían ejecutarse serialmente, resultando en 2.
+c. Similar a los casos anteriores, podría pasar que levanten 0 los dos, incrementando a 1, y escribiendo 1. También podrían ejecutarse serialmente, resultando en 2.
+*/
+
+// 2.a
+const True = 1
+const False = 0
+
+range Bools = 0..1
+
+FLAG0 = FLAG0[False],
+
+FLAG0[b:Bools] = (write_flag0[c:Bools]->FLAG0[c]|
+				  read_flag0[b]->FLAG0[b]).
+
+FLAG1 = FLAG1[False],
+
+FLAG1[b:Bools] = (write_flag1[c:Bools]->FLAG1[c]|
+				  read_flag1[b]->FLAG1[b]).
+
+// 2.b
+
+TURN = TURN[0],
+
+TURN[n:0..1] = (write_turn_0[1]->TURN[1]|
+				write_turn_1[0]->TURN[0]|
+				read_turn_0[n]->TURN[n]|
+				read_turn_1[n]->TURN[n]).
+
+// 2.c
+
+PROCESO0 = (write_flag0[True] -> write_turn_0[1] -> SUBPROCESO0),
+
+SUBPROCESO0 = (read_flag1[False] -> CRITICAL0|
+			   read_flag1[True] -> (read_turn_0[0] -> CRITICAL0|
+							  		read_turn_0[1] -> SUBPROCESO0)),
+
+CRITICAL0 = (critical[0] -> write_flag0[False] -> PROCESO0).
+
+PROCESO1 = (write_flag1[True] -> write_turn_1[0] -> SUBPROCESO1),
+
+SUBPROCESO1 = (read_flag0[False] -> CRITICAL1|
+			   read_flag0[True] -> (read_turn_1[1] -> CRITICAL1|
+							  		read_turn_1[0] -> SUBPROCESO1)),
+
+CRITICAL1 = (critical[1] -> write_flag1[False] -> PROCESO1).
+
+// 2.d
+
+||PROCESOS = (PROCESO1 || PROCESO0 || FLAG0 || FLAG1 || TURN).
+
+// 3
+
+MUTEX = (acquire -> release -> MUTEX).
+
+USER = (acquire -> use -> release -> USER).
+
+||MUTEX_USERS = (a:USER || b:USER || {a,b}::MUTEX).
+
+// 4
+
+SEMAPHORE(N=2) = SEMA[0],
+
+SEMA[n:0..N] = (when(n<N) acquire -> SEMA[n+1]|
+				when(n>0) release -> SEMA[n-1]).
+
+USER2 = (acquire -> acquire -> use -> release -> release -> USER2).
+
+||SEMAPHORE_USERS = (a:USER2 || b:USER2 || {a,b}::SEMAPHORE).
+
+// Se ve un claro deadlock cuando se hace a.acquire, b.acquire. Al hacer 2 acquire en diferentes procesos, no se puede realizar otro, pero los procesos no liberarán ninguno de los recursos.
+// Se puede solucionar diferenciando los dos acquire de tal forma que siempre se ejecute en el mismo orden.
+
+SEMAPHORE(N=2) = SEMA[0],
+
+SEMA[n:0..N] = (when(n<N) acquire[n] -> SEMA[n+1]|
+				when(n>0) release[n-1] -> SEMA[n-1]).
+
+USER2 = (acquire[0] -> acquire[1] -> use -> release[1] -> release[0] -> USER2).
+
+||SEMAPHORE_USERS = (a:USER2 || b:USER2 || {a,b}::SEMAPHORE).
+
+// 5
+
+const Max = 4
+range T = 2..Max
+
+PIPE(I=1) = (pipe[I].put[j:T] -> pipe[I].get[j] -> PIPE).
+
+PUMP = PUMP[2],
+PUMP[i:T] = (pipe[1].put[i] -> PUMP[i+1]),
+PUMP[Max+1] = STOP.
+
+FILTER(P=2) = (pipe[P-1].get[k:2..Max] -> (when(k==P) prime[k] -> FILTER|
+							 			   when(k % P != 0) pipe[P].put[k]-> FILTER))+{pipe[P].put[T]}.
+
+||PRIME = (forall [n:1..Max] (PIPE(n))  ||
+		   forall [p:T] (FILTER(p)) ||
+		   PUMP).
+
+// 6
+
+const N = 4
+
+READER = (start.read -> reader.work -> end.read -> READER)+{start.write, end.write}.
+
+WRITER = (start.write -> writer.work -> end.write -> WRITER)+{start.read, end.read}.
+
+DBASE = DATABASE[0],
+
+DATABASE[i:0..N] = (when(i < N) start.read -> DATABASE[i+1]|
+					when(i > 0) end.read -> DATABASE[i-1]|
+					when(i == 0) start.write -> DATABASE_WRITTEN),
+
+DATABASE_WRITTEN = (end.write -> DATABASE[0]).
+
+
+||DB = ({a,b,c,d}::DBASE || a:READER || b:READER || c:WRITER || d:WRITER).
