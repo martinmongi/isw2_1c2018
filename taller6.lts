@@ -1,0 +1,67 @@
+// Ej 1
+
+const MAX_AGUA = 4
+const AGUA_CRITICA = 2
+
+BOMBA = (on -> off -> BOMBA).
+
+ALARMA = (alarma -> ALARMA).
+
+SENSOR_AGUA = SENSOR_AGUA[AGUA_CRITICA],
+SENSOR_AGUA[i:0..MAX_AGUA] = (tick -> nivel[i] -> SENSOR_AGUA[i]|
+							  when (i < MAX_AGUA) tick -> nivel[i+1] -> SENSOR_AGUA[i+1]|
+							  when (i > 0) tick -> nivel[i-1] -> SENSOR_AGUA[i-1]).
+
+METANO = (tick -> alto -> METANO
+		 |tick -> bajo -> METANO).
+
+CONTROLADOR_INIT = (tick -> CONTROLADOR),
+
+CONTROLADOR = (alto -> nivel[i:0..MAX_AGUA] -> (when (i >= AGUA_CRITICA) tick -> alarma -> CONTROLADOR
+											   |when (i <  AGUA_CRITICA) tick -> CONTROLADOR)
+			  |bajo -> nivel[i:0..MAX_AGUA] -> (when (i >= AGUA_CRITICA) tick -> on -> CONTROLADOR_BOMBA_ENCENDIDA
+											   |when (i <  AGUA_CRITICA) tick -> CONTROLADOR)),
+
+CONTROLADOR_BOMBA_ENCENDIDA = (alto -> nivel[i:0..MAX_AGUA] -> (when (i >= AGUA_CRITICA) tick -> off -> alarma -> CONTROLADOR
+														 	   |when (i <  AGUA_CRITICA) tick -> off -> CONTROLADOR)
+							  |bajo -> nivel[i:0..MAX_AGUA] -> (when (i >= AGUA_CRITICA) tick -> CONTROLADOR_BOMBA_ENCENDIDA
+															   |when (i <  AGUA_CRITICA) tick -> off ->CONTROLADOR)).
+
+|| SYS = (BOMBA || ALARMA || SENSOR_AGUA || METANO || CONTROLADOR_INIT).
+
+// Ej 2
+
+range Asientos = 0..1
+range Terminales = 0..1
+
+set M = {[Terminales].reservar[Asientos], [Terminales].disponible[Asientos]}  
+set S = {[M],[M][M]} 
+
+
+PORT                 //empty state, only send permitted
+  = (send[x:M]->PORT[x]),
+PORT[h:M]            //one message queued to port
+  = (send[x:M]->PORT[x][h]
+  	|receive[h]->PORT
+    ),   
+PORT[t:S][h:M]       //two or more  messages queued to port
+  = (send[x:M]->PORT[x][t][h]
+    |receive[h]->PORT[t]
+    ).
+
+ASIENTO(I=0) = ASIENTO_LIBRE,
+ASIENTO_LIBRE = (libre[I] -> ASIENTO_LIBRE|
+				 reservar[I] -> ASIENTO_OCUPADO),
+ASIENTO_OCUPADO = (ocupado[I] -> ASIENTO_OCUPADO).
+
+TERMINAL(T=0) = (port.send[T].reservar[i:Asientos] -> ([T].ok -> TERMINAL| [T].nok -> TERMINAL)|
+				 port.send[T].disponible[i:Asientos] -> ([T].disponible -> TERMINAL | [T].nodisponible -> TERMINAL)).
+
+SERVIDOR = (port.receive[t:Terminales].reservar[i:Asientos] -> (reservar[i] -> [t].ok -> SERVIDOR|
+					      				 		    ocupado[i] -> [t].nok -> SERVIDOR)|
+			port.receive[t:Terminales].disponible[i:Asientos] -> (libre[i] -> [t].disponible -> SERVIDOR|
+									 			 	  ocupado[i] -> [t].nodisponible -> SERVIDOR)).
+
+// minimal ||CENTRAL = (forall[i:Asientos] ASIENTO(i) || SERVIDOR).
+
+||TEATRO = (forall[i:Asientos] ASIENTO(i) || SERVIDOR || forall[t:Terminales] TERMINAL(t) || port:PORT)\{[Asientos].{libre, reservar, ocupado}}.
