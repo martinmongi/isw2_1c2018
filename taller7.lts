@@ -1,0 +1,162 @@
+set Sensors = {engineOn,engineOff,on,off,
+               resume,brake,accelerator}
+set Engine  = {engineOn,engineOff}
+set Prompts = {clearSpeed,recordSpeed,
+               enableControl,disableControl}
+set Alphabet1 = {accelerator,brake,clearSpeed,disableControl,
+enableControl,engineOff,engineOn,off,on,
+recordSpeed,resume,setThrottle,speed,zoom}
+
+
+SENSORSCAN = ({Sensors} -> SENSORSCAN).
+
+INPUTSPEED = (engineOn -> CHECKSPEED),
+
+CHECKSPEED = (speed -> CHECKSPEED |engineOff -> INPUTSPEED).
+
+THROTTLE =(setThrottle -> zoom -> THROTTLE).
+
+SPEEDCONTROL = DISABLED,
+
+DISABLED =({speed,clearSpeed,recordSpeed}->DISABLED
+          | enableControl -> ENABLED ),
+
+ENABLED = ( speed -> setThrottle -> ENABLED
+          |{recordSpeed,enableControl} -> ENABLED
+          | disableControl -> DISABLED ).
+
+set DisableActions = {off,brake,accelerator}
+
+CRUISECONTROLLER = INACTIVE,
+
+INACTIVE = (engineOn -> clearSpeed -> ACTIVE
+     |DisableActions -> INACTIVE ),
+
+ACTIVE   =(engineOff -> INACTIVE
+          |on->recordSpeed->enableControl->CRUISING
+    |DisableActions -> ACTIVE ),
+
+CRUISING =(engineOff -> INACTIVE
+          |DisableActions->disableControl->STANDBY
+          |on->recordSpeed->enableControl->CRUISING ),
+
+STANDBY  =(engineOff -> INACTIVE
+          |resume -> enableControl -> CRUISING
+          |on->recordSpeed->enableControl->CRUISING
+    |DisableActions -> STANDBY ).
+
+||CONTROL = (CRUISECONTROLLER||SPEEDCONTROL).
+
+||CRUISECONTROLSYSTEM = (CONTROL||SENSORSCAN||INPUTSPEED||THROTTLE).
+
+||CheckSD1 = (SD1 || CRUISECONTROLSYSTEM).
+||CheckSD2 = (SD2 || CRUISECONTROLSYSTEM).
+
+// 1
+
+SD1 = (engineOn -> clearSpeed -> accelerator -> accelerator -> on ->
+	   			recordSpeed -> enableControl -> speed -> setThrottle -> zoom ->
+	   			speed -> accelerator -> setThrottle -> zoom -> speed ->
+	   			disableControl -> STOP)+Alphabet1.
+
+// El sistema no puede cumplir con la traza indicada, ya que nunca puede efectuar el último disableControl
+
+// 2
+
+SD2 = (engineOn -> clearSpeed -> accelerator -> accelerator -> on ->
+	   			recordSpeed -> enableControl -> speed -> setThrottle -> zoom ->
+	   			speed -> accelerator -> setThrottle -> zoom -> disableControl ->
+				STOP)+Alphabet1.
+
+// El sistema puede cumplir con la traza presentada, ya que llega al STOP existente en SD2 y no llega a un deadlock anterior.
+
+/* 3
+Básicamente, el sistema consistiría en copiar la traza que presenta el diagrama de secuencia
+en un proceso con sólo una opción por estado para salir, como hicimos en los ejercicios anteriores.
+Luego, se compondría este nuevo proceso con el cual a evaluar. Si el sistema llega a un deadlock
+diferente del STOP final del nuevo proceso, el sistema no puede efectuar la traza.
+*/
+
+// 4
+
+P1 = (a.start -> a.end -> jf -> c.start -> c.end -> d.start -> d.end -> j1 -> f.start -> f.end -> STOP).
+P2 = (b.start -> b.end -> jf -> e.start -> e.end -> j1 -> f.start -> f.end -> STOP).
+
+||Act = (P1||P2||PBD||PED).
+
+// 5
+
+property PBD = (b.start -> (d.start -> ERROR|
+                            b.end -> d.start -> d.end -> PBD)|
+                d.start -> (b.start -> ERROR|
+                            d.end -> b.start -> b.end -> PBD)).
+
+property PED = (e.start -> (d.start -> ERROR|
+                            e.end -> d.start -> d.end -> PED)|
+                d.start -> (e.start -> ERROR|
+                            d.end -> e.start -> e.end -> PED)).
+
+/* 6
+Para generar un FSP a partir de un Diagrama de Actividad podemos definir a
+cada uno de los procesos que lo componen como procesos de FSP. Por cada uno
+de ellos, modelamos cada actividad del mismo como "actividad.{start, end}",
+respetando el orden en el que aparecen en el diagrama.
+Por ultimo, necesitamos modelar los joins, estos son analogos a los ticks de
+procesos sincronicos que vimos anteriormente, y podemos implementarlos de
+manera similar, sincronizando mediante la misma accion con una etiqueta que
+represente dicho join.
+*/
+
+// 7
+
+set Alphabet2 =
+{
+  abort, arrived, down, goDown, goUp, up, gotoLoc, land, landed,
+  moveE, moveN, moveS, moveW, toggleVideo, tVideo, takeOff,
+  takenOff}
+set UserActions = {
+  gotoLoc, land, takeOff, goDown, goUp, toggleVideo, abort}
+set UserEvents = {arrived, takenOff, landed}
+set VehicleActions = {
+  down, up, moveE, moveN, moveS, moveW, tVideo}
+
+CONTROLLER = IDLE,
+
+IDLE = (gotoLoc -> MOVING |
+		gotoLoc -> arrived -> IDLE |
+		land -> LANDING |
+		takeOff -> TAKINGOFF |
+		goUp -> up -> IDLE |
+		goUp -> IDLE |
+		goDown -> down -> IDLE |
+		goDown -> IDLE |
+		toggleVideo -> tVideo -> IDLE),
+
+MOVING = ({moveN, moveS, moveE, moveW} -> MOVING | abort -> IDLE |
+          {moveN, moveS, moveE, moveW} -> arrived -> IDLE),
+
+LANDING = (down -> LANDING | down -> landed -> IDLE),
+
+TAKINGOFF = (up -> TAKINGOFF | up -> (
+                 takenOff -> IDLE | abort -> IDLE) |
+             abort -> IDLE).
+
+USER = ({UserActions,UserEvents} -> USER).
+
+VEHICLE = ({VehicleActions} -> VEHICLE).
+
+||SYSTEM = (USER || CONTROLLER || VEHICLE).
+||Check_UseCaseMoving = (SYSTEM || USECASE_Moving).
+||Check_UseCaseTakingOff = (SYSTEM || USECASE_TakingOff).
+
+USECASE_Moving = (gotoLoc -> abort -> land -> USECASE_Moving).
+USECASE_TakingOff = (takeOff -> abort -> land -> USECASE_TakingOff).
+
+/* 8
+
+A diferencia de los diagramas anteriores, no hay una manera algoritmica
+simple de traducir un Caso de Uso a un proceso de FSP, ya que estos se encuentran
+escritos en lenguaje natural que debe ser interpretado. Si estos fueran escritos
+más formalmente, se podría ver que se ejecutara primero la traza correspondiente 
+a la precondición, luego la poscondición y agregando las acciones que no queremos
+que pasen al alfabeto. Luego, componemos el proceso y vemos que no se genere un deadlock
