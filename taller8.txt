@@ -1,0 +1,75 @@
+Ejercicio 1
+
+a) <>(p ^ !q)
+b) p U q
+c) p U []q
+d) q V []p
+e) [](request -> <>ack)
+
+Ejercicio 2
+
+Creemos que este sistema modela un teléfono.
+En este sistema, de S1 (Libre) se puede pasar a S2 (Discando) o S3 (En Uso).
+De Discando se puede ir a En Uso o a Libre. De En Uso se puede quedar en En Uso
+o volver a Libre.
+
+Ejercicio 3
+
+a) s2, s4, s5, s5 ...                           LIVENESS
+b) s1, s3, s2, s3, s2 ...                       LIVENESS
+c) No existe traza, ya que s1 no puede ir a s1 y para llegar a s5 necesitamos
+pasar por un estado en el cual no vale a.       SAFETY
+d) s1, s3, s2, s3, s2 ...                       SAFETY
+e) s1, s3, s2, s3, s2 ...                       LIVENESS
+
+Ejercicio 4
+
+<>([]!ci -> []<>wi)
+
+([]<>(wi ^ !cj)) -> ([]<>ci)
+
+Ejercicio 5
+
+a. []!(X.use ^ Y.use)
+b. [](X.use -> <>X.release)
+c. [](X.request -> <>X.use)
+d. []<>X.request
+e. []((X.release ^ Y.request) -> X(Y.use))
+
+Ejercicio 6
+
+<>(cant_lider = 1) ^ [](cant_lider <= 1)
+
+Ejercicio 7
+
+a) Falso por el siguiente contraejemplo que cumple con la derecha pero no con
+la izquierda:
+
+--> {p} <--> {q}
+
+b) Verdadero. Demostración:
+
+sigma[i] |= [](p & q) <--> para todo j:j>=i sigma[j] |= (p & q) <-->
+para todo j:j>=i sigma[j] |= p ^ sigma[j] |= q <-->
+para todo j:j>=i sigma[j] |= p ^ para todo j:j>=i sigma[j] |= q <-->
+sigma[i] |= []p & []q
+
+c) Falso por el siguiente contraejemplo que cumple con la izquierda pero no con
+la derecha:
+
+--> {p} <--> {q}
+
+d) Falso por el siguiente contraejemplo que cumple con la izquierda pero no con
+la derecha:
+    __              __
+    \/              \/ 
+--> {a} --> {b} --> {d} --> {c} 
+
+e) Verdadero.
+
+a U b es verdadero cuando tiene una sucesión finita de cero o más estados donde
+vale (a & !b) y luego un estado donde vale b.
+Entonces es falso cuando tiene una sucesión infinita de estados donde vale (a & !b)
+o una finita no seguida de un estado en donde vale b ni a.
+Formalizado [](a & !b) | (a & !b) U (!a & !b).
+Esto es equivalente a (a & !b) W (!a & !b).
