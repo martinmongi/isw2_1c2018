@@ -1,0 +1,46 @@
+Ejercicio 1
+
+1. E<> (empezado ^ !listo)
+2. A<> (ack)
+3. A[] A<> (habilitado)
+4. A[] E<> (restart)
+5. A[] (P -> A<>S)
+6. A[] (P -> (A<>S & A<>T))
+7. A[] (Q -> A[](P -> A<>S))
+
+Ejercicio 2
+
+1. E<> f		vs			f | EX E<> f			VERDADERO
+2. A[f U g]		vs			g | (f & AX A[f U g])) 	VERDADERO
+3. !A<> Ω		vs 			E[] !Ω					VERDADERO
+4. !AX Ω		vs			EX !Ω					VERDADERO
+5. !E[!P U R]	vs			A[!R W (P & !R)]		VERDADERO
+							A[](!R) || A[!R U (P & !R)]	   
+
+Ejercicio 3
+
+ 	---------------------------------------------
+	|											|
+--->{} -> {coin} -> {coin, chose} -> {serving} -|
+	|		|			|
+	---------			|
+	|					|
+	---------------------
+
+Ejercicio 4
+
+1. A[] (chose -> A<>(serving))
+2. A<> (serving)
+
+Ejercicio 5
+
+i. VERDADERO
+ii. VERDADERO
+iii. VERDADERO
+iv. FALSO
+
+Ejercicio 6
+
+1. A<> (comunicacion_finalizada)
+2. A[] (!deadlock)
+3. A[] (establecida -> A<> finalizada)
