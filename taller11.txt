@@ -1,0 +1,126 @@
+Ejercicio 1
+
+a) El modelo de NuSMV tiene dos variables: request y state, con dos valores posibles cada uno. En consecuencia, hay 4 estados posibles.
+Se especifica que en los estados iniciales state = ready. Entonces, 2 de ellos son iniciales.
+Además se especifica que el siguiente de un estado se decide con la siguiente regla: si state = ready y request = true en el estado anterior, entonces state = busy; si no, de manera no determínistica se pasa a los estados con state = ready y state = busy.
+
+b) Obtuvimos la siguiente salida:
+
+Current state is 1.1
+request = FALSE
+state = ready
+
+Nos muestra un identificador del estado y el estado de las variables. Vemos que eligió el estado con request = FALSE, de los dos posibles.
+
+c) Obtuvimos la siguiente salida:
+
+<!-- ################### Trace number: 1 ################### -->
+Trace Description: Simulation Trace
+Trace Type: Simulation
+  -> State: 1.1 <-
+    request = FALSE
+    state = ready
+  -> State: 1.2 <-
+    request = TRUE
+    state = ready
+  -> State: 1.3 <-
+    request = TRUE
+    state = busy
+  -> State: 1.4 <-
+    request = FALSE
+    state = ready
+
+El comando simulate genera una traza de 3 saltos, eligiendo el próximo estado de una manera aleatoria entre los estados posibles. La salida muestra la traza generada en detalle.
+
+d) Obtuvimos la siguiente salida:
+
+    <!-- ################### Trace number: 2 ################### -->
+Trace Description: Simulation Trace
+Trace Type: Simulation
+  -> State: 2.1 <-
+    request = FALSE
+    state = ready
+  -> State: 2.2 <-
+    request = TRUE
+  -> State: 2.3 <-
+    state = busy
+  -> State: 2.4 <-
+    request = FALSE
+    state = ready
+  -> State: 2.5 <-
+    request = TRUE
+  -> State: 2.6 <-
+    request = FALSE
+    state = busy
+  -> State: 2.7 <-
+    state = ready
+
+Similarmente al punto anterior, pero pedimos que empiece en el estado 1.4. Luego muestra la traza que necesita para llegar a 1.4 más los 3 saltos identificados.
+
+e) AG (request -> AF state = busy)
+
+f) Obtenemos la siguiente salida:
+
+-- specification AG (request -> AF state = busy)  is true
+
+Ejercicio 2
+
+a) Se definen dos módulos: counter_cell y main. El primero simula una celda de un bit, con su carry. Main simula un contador hasta 8.
+
+Obtuvimos la siguiente salida:
+
+<!-- ################### Trace number: 1 ################### -->
+Trace Description: Simulation Trace
+Trace Type: Simulation
+  -> State: 1.1 <-
+    bit0.value = FALSE
+    bit1.value = FALSE
+    bit2.value = FALSE
+    bit0.carry_out = FALSE
+    bit1.carry_out = FALSE
+    bit2.carry_out = FALSE
+  -> State: 1.2 <-
+    bit0.value = TRUE
+    bit0.carry_out = TRUE
+  -> State: 1.3 <-
+    bit0.value = FALSE
+    bit1.value = TRUE
+    bit0.carry_out = FALSE
+  -> State: 1.4 <-
+    bit0.value = TRUE
+    bit0.carry_out = TRUE
+    bit1.carry_out = TRUE
+  -> State: 1.5 <-
+    bit0.value = FALSE
+    bit1.value = FALSE
+    bit2.value = TRUE
+    bit0.carry_out = FALSE
+    bit1.carry_out = FALSE
+  -> State: 1.6 <-
+    bit0.value = TRUE
+    bit0.carry_out = TRUE
+  -> State: 1.7 <-
+    bit0.value = FALSE
+    bit1.value = TRUE
+    bit0.carry_out = FALSE
+  -> State: 1.8 <-
+    bit0.value = TRUE
+    bit0.carry_out = TRUE
+    bit1.carry_out = TRUE
+    bit2.carry_out = TRUE
+
+La traza valida nuestra intuición.
+
+b) SPEC AG (AF bit2.carry_out)
+
+c) El sistema valido la propiedad
+
+Ejercicio 3
+
+a) AG !(proc1.state = critical & proc2.state = critical)
+
+b) AG (state = entering -> AF state = critical)
+
+c) La propiedad a) es verdadera y la b) es falsa, ya que puede haber inanición de uno de los procesos,
+ya que si bien hay fairness sobre running, esto no garantiza que un proceso en zona crítica salga de 
+ella en algún momento.
